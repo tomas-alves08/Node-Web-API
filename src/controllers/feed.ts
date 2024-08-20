@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { IError, IPost } from "../utils/schema";
+import { IError, IPost, IUser, RequestCustom } from "../utils/schema";
 import { validationResult } from "express-validator";
 import Post from "../models/post";
 import path from "path";
 import fs from "fs";
+import User from "../models/user";
+import { Types } from "mongoose";
+import io from "../socket";
 
 export async function getPosts(
   req: Request,
@@ -17,8 +20,12 @@ export async function getPosts(
     const totalItems = await Post.find().countDocuments();
 
     const posts = await Post.find()
+    .populate("creator")
+    .sort({createdAt: -1})
       .skip((currentPage - 1) * POSTS_PER_PAGE)
       .limit(POSTS_PER_PAGE);
+    
+    // console.log("Fetched posts: ",posts)
 
     return res.status(200).json({
       message: "Fetched posts successfully.",
@@ -32,7 +39,7 @@ export async function getPosts(
 }
 
 export async function createPost(
-  req: Request,
+  req: RequestCustom,
   res: Response,
   next: NextFunction
 ) {
@@ -57,15 +64,26 @@ export async function createPost(
       title,
       content,
       imageUrl: "images/" + req.file.filename,
-      creator: {
-        name: "Tomas",
-      },
+      creator: req.userId,
     });
-    await post.save();
+    const newPost = await post.save();
+
+    const user = await User.findById(req.userId);
+    user?.posts.push(newPost);
+    await user?.save();
+
+    io.getIo().emit("posts", {
+      action: "create",
+      post:{...post._doc, creator:{_id:req.userId, name:user?.name}}
+    });
 
     res.status(201).json({
       message: "Post created successfully!",
       post,
+      creator:{
+        _id:user?._id,
+        name:user?.name
+      }
     });
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
@@ -78,7 +96,7 @@ export async function getPost(req: Request, res: Response, next: NextFunction) {
 
   try {
     const post = await Post.findById(postId);
-    console.log("Post: ", post);
+    // console.log("Post: ", post);
     if (!post) {
       const error: IError = new Error("Could not find post");
       error.statusCode = 404;
@@ -93,7 +111,7 @@ export async function getPost(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function updatePost(
-  req: Request,
+  req: RequestCustom,
   res: Response,
   next: NextFunction
 ) {
@@ -105,10 +123,11 @@ export async function updatePost(
   }
 
   const postId = req.params.postId;
+
   const { title, content } = req.body;
   let imageUrl = req.body.image;
 
-  console.log(req.body);
+  // console.log(req.body);
 
   if (req.file) imageUrl = "images/" + req.file.filename;
 
@@ -119,14 +138,20 @@ export async function updatePost(
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("creator");
     console.log("POST: ", post);
-    console.log("postId: ", postId);
+    // console.log("postId: ", postId);
     if (!post) {
       const error: IError = new Error("No post found");
       error.statusCode = 404;
       throw error;
     }
+
+  if(!post.creator || ((post.creator as IUser)._id.toString() !== req.userId?.toString())){
+    const error = new Error("Not authorized") as IError;
+    error.statusCode = 403;
+    throw error;
+  }
 
     // Delete old image file
     if (imageUrl !== post.imageUrl) clearImage(post.imageUrl);
@@ -136,6 +161,8 @@ export async function updatePost(
     post.imageUrl = imageUrl;
 
     const updatedPost = await post.save();
+
+    io.getIo().emit("posts", {action: "update", post: updatedPost});
 
     return res
       .status(200)
@@ -147,7 +174,7 @@ export async function updatePost(
 }
 
 export async function deletePost(
-  req: Request,
+  req: RequestCustom,
   res: Response,
   next: NextFunction
 ) {
@@ -161,9 +188,21 @@ export async function deletePost(
       throw error;
     }
 
+    if(!post.creator || (post.creator.toString() !== req.userId?.toString())){
+      const error = new Error("Not authorized") as IError;
+      error.statusCode = 403;
+      throw error;
+    }
+
     clearImage(post.imageUrl);
 
     await Post.findByIdAndDelete(postId);
+
+    const user = await User.findById(req.userId);
+    (user?.posts as Types.Array<IPost>).pull(postId);
+    await user?.save();
+
+    io.getIo().emit("posts", {action: "delete", post: postId});
 
     return res.status(200).json({ message: "Post deleted successfully" });
   } catch (err: any) {

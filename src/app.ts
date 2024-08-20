@@ -3,10 +3,13 @@ import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import multer from "multer";
 import fs from "fs";
+import socketServer from "./socket";
+import { Server, Socket } from "socket.io";
 import dotenv from "dotenv";
 dotenv.config();
 
-import feedRoutes from "./routes/feed-router";
+import feedRoutes from "./routes/feed";
+import authRoutes from "./routes/auth";
 import path from "path";
 import { IError } from "./utils/schema";
 
@@ -14,7 +17,7 @@ const app = express();
 
 // FILE STORAGE IN THE DIST FOLDER!!!!
 const imagesDir = path.join(__dirname, "images");
-console.log("imagesDir: ", imagesDir);
+// console.log("imagesDir: ", imagesDir);
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir, { recursive: true });
 }
@@ -59,19 +62,33 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 // ERROR HANDLING MIDDLEWARE
 app.use((error: IError, req: Request, res: Response, next: NextFunction) => {
-  console.log(error);
+  // console.log(error);
   const status = error.statusCode || 500;
   const message = error.message;
-  res.status(status).json({ message });
+  res.status(status).json({ message, error });
 });
 
 mongoose
   .connect(process.env.MONGODB_URI || "")
   .then(() => {
-    app.listen(8080);
+    const server = app.listen(8080);
+
+    // SET UP SOCKET.IO
+    const io = socketServer.init(server, {
+      cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true
+      }
+    });
+    io.on("connection", (socket: Socket) => {
+      console.log("Client connected", socket.id);
+    })
   })
   .catch((err: any) => {
     console.log(err.message);
