@@ -4,18 +4,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const fs_1 = __importDefault(require("fs"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const multer_1 = __importDefault(require("multer"));
-const fs_1 = __importDefault(require("fs"));
+const socket_1 = __importDefault(require("./socket"));
+const helmet_1 = __importDefault(require("helmet"));
+const compression_1 = __importDefault(require("compression"));
+const morgan_1 = __importDefault(require("morgan"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const feed_router_1 = __importDefault(require("./routes/feed-router"));
+const feed_1 = __importDefault(require("./routes/feed"));
+const auth_1 = __importDefault(require("./routes/auth"));
 const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
+const privateKey = fs_1.default.readFileSync("server-key");
+const certificate = fs_1.default.readFileSync("server.cert");
+// SECURITY MIDDLEWARE
+app.use((0, helmet_1.default)());
+// COMPRESSION MIDDLEWARE
+app.use((0, compression_1.default)());
+// LOGGER MIDDLEWARE
+const accessLogStream = fs_1.default.createWriteStream(path_1.default.join(__dirname, "access.log"), { flags: "a" });
+app.use((0, morgan_1.default)("combined", { stream: accessLogStream }));
 // FILE STORAGE IN THE DIST FOLDER!!!!
 const imagesDir = path_1.default.join(__dirname, "images");
-console.log("imagesDir: ", imagesDir);
+// console.log("imagesDir: ", imagesDir);
 if (!fs_1.default.existsSync(imagesDir)) {
     fs_1.default.mkdirSync(imagesDir, { recursive: true });
 }
@@ -46,18 +60,32 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     next();
 });
-app.use("/feed", feed_router_1.default);
+app.use("/feed", feed_1.default);
+app.use("/auth", auth_1.default);
 // ERROR HANDLING MIDDLEWARE
 app.use((error, req, res, next) => {
-    console.log(error);
+    // console.log(error);
     const status = error.statusCode || 500;
     const message = error.message;
-    res.status(status).json({ message });
+    res.status(status).json({ message, error });
 });
 mongoose_1.default
     .connect(process.env.MONGODB_URI || "")
     .then(() => {
-    app.listen(8080);
+    // Development Mode
+    const server = app.listen(process.env.PORT || 8080);
+    // SET UP SOCKET.IO
+    const io = socket_1.default.init(server, {
+        cors: {
+            origin: "https://localhost:3000",
+            methods: ["GET", "POST"],
+            allowedHeaders: ["Content-Type", "Authorization"],
+            credentials: true,
+        },
+    });
+    io.on("connection", (socket) => {
+        console.log("Client connected", socket.id);
+    });
 })
     .catch((err) => {
     console.log(err.message);
