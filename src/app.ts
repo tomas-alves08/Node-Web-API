@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
 import fs from "fs";
-import https from "https";
 
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
@@ -100,17 +99,17 @@ mongoose
     const server = app.listen(process.env.PORT || 8080);
 
     // SET UP SOCKET.IO
-    const io = socketServer.init(server, {
-      cors: {
-        origin: "https://localhost:3000",
-        methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-      },
-    });
-    io.on("connection", (socket: Socket) => {
-      console.log("Client connected", socket.id);
-    });
+    // const io = socketServer.init(server, {
+    //   cors: {
+    //     origin: "https://localhost:3000",
+    //     methods: ["GET", "POST"],
+    //     allowedHeaders: ["Content-Type", "Authorization"],
+    //     credentials: true,
+    //   },
+    // });
+    // io.on("connection", (socket: Socket) => {
+    //   console.log("Client connected", socket.id);
+    // });
   })
   .catch((err: any) => {
     console.log(err.message);

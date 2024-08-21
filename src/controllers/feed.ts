@@ -20,11 +20,11 @@ export async function getPosts(
     const totalItems = await Post.find().countDocuments();
 
     const posts = await Post.find()
-    .populate("creator")
-    .sort({createdAt: -1})
+      .populate("creator")
+      .sort({ createdAt: -1 })
       .skip((currentPage - 1) * POSTS_PER_PAGE)
       .limit(POSTS_PER_PAGE);
-    
+
     // console.log("Fetched posts: ",posts)
 
     return res.status(200).json({
@@ -72,18 +72,18 @@ export async function createPost(
     user?.posts.push(newPost);
     await user?.save();
 
-    io.getIo().emit("posts", {
-      action: "create",
-      post:{...post._doc, creator:{_id:req.userId, name:user?.name}}
-    });
+    // io.getIo().emit("posts", {
+    //   action: "create",
+    //   post:{...post._doc, creator:{_id:req.userId, name:user?.name}}
+    // });
 
     res.status(201).json({
       message: "Post created successfully!",
       post,
-      creator:{
-        _id:user?._id,
-        name:user?.name
-      }
+      creator: {
+        _id: user?._id,
+        name: user?.name,
+      },
     });
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
@@ -147,11 +147,14 @@ export async function updatePost(
       throw error;
     }
 
-  if(!post.creator || ((post.creator as IUser)._id.toString() !== req.userId?.toString())){
-    const error = new Error("Not authorized") as IError;
-    error.statusCode = 403;
-    throw error;
-  }
+    if (
+      !post.creator ||
+      (post.creator as IUser)._id.toString() !== req.userId?.toString()
+    ) {
+      const error = new Error("Not authorized") as IError;
+      error.statusCode = 403;
+      throw error;
+    }
 
     // Delete old image file
     if (imageUrl !== post.imageUrl) clearImage(post.imageUrl);
@@ -162,7 +165,7 @@ export async function updatePost(
 
     const updatedPost = await post.save();
 
-    io.getIo().emit("posts", {action: "update", post: updatedPost});
+    // io.getIo().emit("posts", {action: "update", post: updatedPost});
 
     return res
       .status(200)
@@ -188,7 +191,7 @@ export async function deletePost(
       throw error;
     }
 
-    if(!post.creator || (post.creator.toString() !== req.userId?.toString())){
+    if (!post.creator || post.creator.toString() !== req.userId?.toString()) {
       const error = new Error("Not authorized") as IError;
       error.statusCode = 403;
       throw error;
@@ -202,7 +205,7 @@ export async function deletePost(
     (user?.posts as Types.Array<IPost>).pull(postId);
     await user?.save();
 
-    io.getIo().emit("posts", {action: "delete", post: postId});
+    // io.getIo().emit("posts", {action: "delete", post: postId});
 
     return res.status(200).json({ message: "Post deleted successfully" });
   } catch (err: any) {
