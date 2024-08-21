@@ -19,8 +19,8 @@ import { IError } from "./utils/schema";
 
 const app = express();
 
-const privateKey = fs.readFileSync("server-key");
-const certificate = fs.readFileSync("server.cert");
+// const privateKey = fs.readFileSync("server-key");
+// const certificate = fs.readFileSync("server.cert");
 
 // SECURITY MIDDLEWARE
 app.use(helmet());
