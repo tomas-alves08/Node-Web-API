@@ -5,7 +5,7 @@ import https from "https";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import multer from "multer";
-import socketServer from "./socket";
+import * as socketServer from "./socket";
 import { Socket } from "socket.io";
 import helmet from "helmet";
 import compression from "compression";
