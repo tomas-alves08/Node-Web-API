@@ -61,7 +61,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const token = jwt.sign(
       { email: user.email, userId: user._id.toString() },
       process.env.WEB_TOKEN_SECRET || "",
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     // console.log("LOGIN: ", token);
@@ -73,29 +73,42 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function getUserStatus(req: RequestCustom, res: Response, next: NextFunction) {
-  try{
+export async function getUserStatus(
+  req: RequestCustom,
+  res: Response,
+  next: NextFunction
+) {
+  try {
     const user = await User.findById(req.userId);
-    if(!user){
+    if (!user) {
       const error = new Error("User could not be found") as IError;
       error.statusCode = 404;
       throw error;
     }
-    res.status(200).json({message: "User status fetched successfully", status: user.status});
-    }catch(err: any) {
-      if (!(err as IError).statusCode) err.statusCode = 500;
-      next(err);
-    }
+    res
+      .status(200)
+      .json({
+        message: "User status fetched successfully",
+        status: user.status,
+      });
+  } catch (err: any) {
+    if (!(err as IError).statusCode) err.statusCode = 500;
+    next(err);
+  }
 }
 
-export async function updateUserStatus(req: RequestCustom, res: Response, next: NextFunction) {
+export async function updateUserStatus(
+  req: RequestCustom,
+  res: Response,
+  next: NextFunction
+) {
   const newStatus = req.body.status;
   // console.log("newStatus: ", newStatus);
-  try{
+  try {
     const user = await User.findById(req.userId);
     // console.log("USER: ", user, req.userId);
 
-    if(!user){
+    if (!user) {
       const error = new Error("User could not be found") as IError;
       error.statusCode = 404;
       throw error;
@@ -104,8 +117,13 @@ export async function updateUserStatus(req: RequestCustom, res: Response, next: 
     user.status = newStatus;
     await user.save();
 
-    res.status(200).json({message: "User status updated successfully",status: user.status});
-  } catch(err: any) {
+    res
+      .status(200)
+      .json({
+        message: "User status updated successfully",
+        status: user.status,
+      });
+  } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);
   }

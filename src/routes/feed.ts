@@ -13,7 +13,11 @@ import isAuth from "../middleware/isAuth";
 const router = express.Router();
 
 // GET /feed/posts
-router.get("/posts", isAuth, getPosts);
+router.get(
+  "/posts",
+  // isAuth,
+  getPosts
+);
 
 // POST /feed/posts
 router.post(
@@ -26,7 +30,7 @@ router.post(
   createPost
 );
 
-router.get("/post/:postId",isAuth, getPost);
+router.get("/post/:postId", isAuth, getPost);
 
 router.put(
   "/post/:postId",
@@ -38,6 +42,6 @@ router.put(
   updatePost
 );
 
-router.delete("/post/:postId",isAuth, deletePost);
+router.delete("/post/:postId", isAuth, deletePost);
 
 export default router;
