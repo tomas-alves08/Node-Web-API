@@ -13,11 +13,7 @@ import isAuth from "../middleware/isAuth";
 const router = express.Router();
 
 // GET /feed/posts
-router.get(
-  "/posts",
-  // isAuth,
-  getPosts
-);
+router.get("/posts", isAuth, getPosts);
 
 // POST /feed/posts
 router.post(

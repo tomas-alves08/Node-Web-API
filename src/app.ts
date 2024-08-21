@@ -96,7 +96,9 @@ mongoose
   .connect(process.env.MONGODB_URI || "")
   .then(() => {
     // Development Mode
-    const server = app.listen(process.env.PORT || 8080);
+    const server = app.listen(process.env.PORT || 8080, () => {
+      console.log("Server listening on port " + process.env.PORT || 8080);
+    });
 
     // SET UP SOCKET.IO
     // const io = socketServer.init(server, {
