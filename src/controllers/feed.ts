@@ -70,7 +70,7 @@ export async function createPost(
 
     const user = await User.findById(req.userId);
     user?.posts.push(newPost);
-    await user?.save();
+    const savedUser = await user?.save();
 
     // io.getIo().emit("posts", {
     //   action: "create",
@@ -85,6 +85,7 @@ export async function createPost(
         name: user?.name,
       },
     });
+    return savedUser;
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);

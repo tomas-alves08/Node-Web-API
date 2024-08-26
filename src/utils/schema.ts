@@ -1,5 +1,5 @@
 import { Document, Schema, Types } from "mongoose";
-import { Request } from "express";
+import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 // import User from "../models/user";
 
@@ -33,6 +33,14 @@ export interface RequestCustom extends Request {
   userId?: Types.ObjectId;
 }
 
+export interface RequestCustomTest extends Partial<Request> {
+  userId?: string;
+}
+
 export interface IJwtPayloadCustom extends JwtPayload {
   userId: string;
+}
+
+export interface CustomResponse extends Partial<Response> {
+  userStatus?: string;
 }

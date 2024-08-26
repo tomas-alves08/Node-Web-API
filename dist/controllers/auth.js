@@ -71,7 +71,7 @@ function login(req, res, next) {
             // console.log("LOGIN: ", user);
             // console.log("LOGIN: ", isPwEqual);
             // console.log("LOGIN .ENV: ", process.env.WEB_TOKEN_SECRET);
-            const token = jsonwebtoken_1.default.sign({ email: user.email, userId: user._id.toString() }, process.env.WEB_TOKEN_SECRET || "", { expiresIn: "1h" });
+            const token = jsonwebtoken_1.default.sign({ email: user.email, userId: user._id.toString() }, process.env.WEB_TOKEN_SECRET || "", { expiresIn: "24h" });
             // console.log("LOGIN: ", token);
             res.status(200).json({ token, userId: user._id.toString() });
         }
@@ -91,7 +91,12 @@ function getUserStatus(req, res, next) {
                 error.statusCode = 404;
                 throw error;
             }
-            res.status(200).json({ message: "User status fetched successfully", status: user.status });
+            res
+                .status(200)
+                .json({
+                message: "User status fetched successfully",
+                status: user.status,
+            });
         }
         catch (err) {
             if (!err.statusCode)
@@ -114,7 +119,12 @@ function updateUserStatus(req, res, next) {
             }
             user.status = newStatus;
             yield user.save();
-            res.status(200).json({ message: "User status updated successfully", status: user.status });
+            res
+                .status(200)
+                .json({
+                message: "User status updated successfully",
+                status: user.status,
+            });
         }
         catch (err) {
             if (!err.statusCode)

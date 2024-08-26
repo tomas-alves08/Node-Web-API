@@ -8,7 +8,6 @@ const fs_1 = __importDefault(require("fs"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const multer_1 = __importDefault(require("multer"));
-const socket_1 = __importDefault(require("./socket"));
 const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const morgan_1 = __importDefault(require("morgan"));
@@ -18,8 +17,8 @@ const feed_1 = __importDefault(require("./routes/feed"));
 const auth_1 = __importDefault(require("./routes/auth"));
 const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
-const privateKey = fs_1.default.readFileSync("server-key");
-const certificate = fs_1.default.readFileSync("server.cert");
+// const privateKey = fs.readFileSync("server-key");
+// const certificate = fs.readFileSync("server.cert");
 // SECURITY MIDDLEWARE
 app.use((0, helmet_1.default)());
 // COMPRESSION MIDDLEWARE
@@ -73,19 +72,21 @@ mongoose_1.default
     .connect(process.env.MONGODB_URI || "")
     .then(() => {
     // Development Mode
-    const server = app.listen(process.env.PORT || 8080);
+    const server = app.listen(process.env.PORT || 8080, () => {
+        console.log("Server listening on port " + process.env.PORT || 8080);
+    });
     // SET UP SOCKET.IO
-    const io = socket_1.default.init(server, {
-        cors: {
-            origin: "https://localhost:3000",
-            methods: ["GET", "POST"],
-            allowedHeaders: ["Content-Type", "Authorization"],
-            credentials: true,
-        },
-    });
-    io.on("connection", (socket) => {
-        console.log("Client connected", socket.id);
-    });
+    // const io = socketServer.init(server, {
+    //   cors: {
+    //     origin: "https://localhost:3000",
+    //     methods: ["GET", "POST"],
+    //     allowedHeaders: ["Content-Type", "Authorization"],
+    //     credentials: true,
+    //   },
+    // });
+    // io.on("connection", (socket: Socket) => {
+    //   console.log("Client connected", socket.id);
+    // });
 })
     .catch((err) => {
     console.log(err.message);

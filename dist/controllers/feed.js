@@ -22,7 +22,6 @@ const post_1 = __importDefault(require("../models/post"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const user_1 = __importDefault(require("../models/user"));
-const socket_1 = __importDefault(require("../socket"));
 function getPosts(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const currentPage = Number(req.query.page) || 1;
@@ -75,17 +74,17 @@ function createPost(req, res, next) {
             const user = yield user_1.default.findById(req.userId);
             user === null || user === void 0 ? void 0 : user.posts.push(newPost);
             yield (user === null || user === void 0 ? void 0 : user.save());
-            socket_1.default.getIo().emit("posts", {
-                action: "create",
-                post: Object.assign(Object.assign({}, post._doc), { creator: { _id: req.userId, name: user === null || user === void 0 ? void 0 : user.name } })
-            });
+            // io.getIo().emit("posts", {
+            //   action: "create",
+            //   post:{...post._doc, creator:{_id:req.userId, name:user?.name}}
+            // });
             res.status(201).json({
                 message: "Post created successfully!",
                 post,
                 creator: {
                     _id: user === null || user === void 0 ? void 0 : user._id,
-                    name: user === null || user === void 0 ? void 0 : user.name
-                }
+                    name: user === null || user === void 0 ? void 0 : user.name,
+                },
             });
         }
         catch (err) {
@@ -144,7 +143,8 @@ function updatePost(req, res, next) {
                 error.statusCode = 404;
                 throw error;
             }
-            if (!post.creator || (post.creator._id.toString() !== ((_a = req.userId) === null || _a === void 0 ? void 0 : _a.toString()))) {
+            if (!post.creator ||
+                post.creator._id.toString() !== ((_a = req.userId) === null || _a === void 0 ? void 0 : _a.toString())) {
                 const error = new Error("Not authorized");
                 error.statusCode = 403;
                 throw error;
@@ -156,7 +156,7 @@ function updatePost(req, res, next) {
             post.content = content;
             post.imageUrl = imageUrl;
             const updatedPost = yield post.save();
-            socket_1.default.getIo().emit("posts", { action: "update", post: updatedPost });
+            // io.getIo().emit("posts", {action: "update", post: updatedPost});
             return res
                 .status(200)
                 .json({ message: "Post updated succesfully", post: updatedPost });
@@ -179,7 +179,7 @@ function deletePost(req, res, next) {
                 error.statusCode = 404;
                 throw error;
             }
-            if (!post.creator || (post.creator.toString() !== ((_a = req.userId) === null || _a === void 0 ? void 0 : _a.toString()))) {
+            if (!post.creator || post.creator.toString() !== ((_a = req.userId) === null || _a === void 0 ? void 0 : _a.toString())) {
                 const error = new Error("Not authorized");
                 error.statusCode = 403;
                 throw error;
@@ -189,7 +189,7 @@ function deletePost(req, res, next) {
             const user = yield user_1.default.findById(req.userId);
             (user === null || user === void 0 ? void 0 : user.posts).pull(postId);
             yield (user === null || user === void 0 ? void 0 : user.save());
-            socket_1.default.getIo().emit("posts", { action: "delete", post: postId });
+            // io.getIo().emit("posts", {action: "delete", post: postId});
             return res.status(200).json({ message: "Post deleted successfully" });
         }
         catch (err) {

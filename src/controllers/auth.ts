@@ -29,9 +29,11 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     });
     const savedUser = await user.save();
     res.status(201).json({ message: "User created", userId: savedUser._id });
+    return;
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);
+    return err;
   }
 }
 
@@ -71,6 +73,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);
   }
+  return;
 }
 
 export async function getUserStatus(
@@ -85,12 +88,10 @@ export async function getUserStatus(
       error.statusCode = 404;
       throw error;
     }
-    res
-      .status(200)
-      .json({
-        message: "User status fetched successfully",
-        status: user.status,
-      });
+    res.status(200).json({
+      message: "User status fetched successfully",
+      status: user.status,
+    });
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);
@@ -117,12 +118,10 @@ export async function updateUserStatus(
     user.status = newStatus;
     await user.save();
 
-    res
-      .status(200)
-      .json({
-        message: "User status updated successfully",
-        status: user.status,
-      });
+    res.status(200).json({
+      message: "User status updated successfully",
+      status: user.status,
+    });
   } catch (err: any) {
     if (!(err as IError).statusCode) err.statusCode = 500;
     next(err);
